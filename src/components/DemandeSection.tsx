@@ -10,10 +10,9 @@ import { useKKiaPay } from 'kkiapay-react';
 const getDocumentPrice = (acteType, actesTypes) => {
     const selectedActe = actesTypes.find((acte: { id: any; }) => acte.id === acteType);
     if (selectedActe) {
-        // Extraire le prix numérique (supprimer " FCFA" et convertir en nombre)
         return parseInt(selectedActe.price.replace(' FCFA', ''), 10);
     }
-    return 0; // Prix par défaut si aucun document n'est sélectionné
+    return 0;
 };
 
 export default function DemandeSection() {
@@ -27,13 +26,13 @@ export default function DemandeSection() {
         acteType: '',
         email: '',
         telephone: '',
-        paymentPhone: '', // Nouveau champ pour le numéro de téléphone de paiement
+        paymentPhone: '',
         acteNaissance: null,
         carteEtudiant: null,
         fichePreinscription: null,
         diplomeBac: null,
         demandeManuscrite: null,
-        paymentMethod: 'momo' // Méthode de paiement par défaut
+        paymentMethod: 'mobile_money'
     });
     const [filePreviews, setFilePreviews] = useState({
         acteNaissance: '',
@@ -46,11 +45,11 @@ export default function DemandeSection() {
     const [paymentStatus, setPaymentStatus] = useState<'pending' | 'success' | 'failed'>('pending');
     const [trackingId, setTrackingId] = useState<string | null>(null);
     const [paymentReference, setPaymentReference] = useState<string | null>(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [studentFullName, setStudentFullName] = useState<string | null>(null);
 
-    // Intégration de KKiaPay
     const { openKkiapayWidget, addKkiapayListener, removeKkiapayListener } = useKKiaPay();
 
-    // Données pour les selects
     const etablissements = [
         "Faculté des Sciences",
         "Faculté de Médecine (FM)",
@@ -160,15 +159,12 @@ export default function DemandeSection() {
         </div>
     );
 
-
-    // Gestion des événements de paiement KKiaPay
     useEffect(() => {
         const successHandler = async (response) => {
             console.log('Paiement réussi:', response);
             setPaymentStatus('success');
-            setPaymentReference(response.transactionId); // Stocker la référence de la transaction
+            setPaymentReference(response.transactionId);
 
-            // Appeler submitForm après un paiement réussi
             setIsSubmitting(true);
             try {
                 const formDataToSend = new FormData();
@@ -181,7 +177,7 @@ export default function DemandeSection() {
                 formDataToSend.append('studentPhone', formData.telephone);
                 formDataToSend.append('paymentMethod', formData.paymentMethod);
                 formDataToSend.append('documentPrice', mdocumentPrice.toString());
-                formDataToSend.append('paymentReference', response.transactionId); // Ajouter la référence de paiement
+                formDataToSend.append('paymentReference', response.transactionId);
 
                 if (formData.acteNaissance) formDataToSend.append('acteNaissance', formData.acteNaissance);
                 if (formData.carteEtudiant) formDataToSend.append('carteEtudiant', formData.carteEtudiant);
@@ -195,7 +191,7 @@ export default function DemandeSection() {
                 }
 
                 setTrackingId(submitResponse.trackingId);
-                setCurrentStep(5); // Passer à l'étape de confirmation
+                setCurrentStep(5);
             } catch (error) {
                 console.error('Erreur lors de la soumission après paiement:', error);
                 alert(error.message || "Une erreur est survenue lors de la soumission après le paiement. Veuillez contacter le support.");
@@ -212,19 +208,44 @@ export default function DemandeSection() {
         addKkiapayListener('success', successHandler);
         addKkiapayListener('failed', failureHandler);
 
-        // Nettoyage des écouteurs
         return () => {
             removeKkiapayListener('success', successHandler);
             removeKkiapayListener('failed', failureHandler);
         };
-    }, [addKkiapayListener, removeKkiapayListener, formData]);
+    }, [addKkiapayListener, removeKkiapayListener, formData, mdocumentPrice]);
 
-    const nextStep = () => {
-        setCurrentStep(prev => prev + 1);
+    const nextStep = async () => {
+        if (currentStep === 1) {
+            setIsSubmitting(true);
+            setErrorMessage(null);
+            try {
+                const verificationData = {
+                    matricule: formData.matricule,
+                    etablissement: formData.etablissement,
+                    anneeEtude: formData.anneeEtude,
+                    anneeAcademique: formData.anneeAcademique,
+                };
+                const result = await api.verifyStudent(verificationData);
+                if (result.success) {
+                    setStudentFullName(result.student?.fullName || null);
+                    setCurrentStep(prev => prev + 1);
+                } else {
+                    setErrorMessage(result.message || 'Étudiant non trouvé.');
+                }
+            } catch (error) {
+                console.error('Erreur lors de la vérification:', error);
+                setErrorMessage('Aucune correspondance pour les informations saisies.');
+            } finally {
+                setIsSubmitting(false);
+            }
+        } else {
+            setCurrentStep(prev => prev + 1);
+        }
     };
 
     const prevStep = () => {
         setCurrentStep(prev => prev - 1);
+        setErrorMessage(null);
     };
 
     const handleChange = (e: any) => {
@@ -233,6 +254,7 @@ export default function DemandeSection() {
             ...prev,
             [name]: value
         }));
+        setErrorMessage(null);
     };
 
     const handleFileChange = (e: any, field: any) => {
@@ -249,97 +271,161 @@ export default function DemandeSection() {
         }
     };
 
-    // const submitForm = async () => {
-    //     setIsSubmitting(true);
-    //     try {
-    //         const formDataToSend = new FormData();
-    //         formDataToSend.append('matricule', formData.matricule);
-    //         formDataToSend.append('establishment', formData.etablissement);
-    //         formDataToSend.append('studyYear', formData.anneeEtude);
-    //         formDataToSend.append('academicYear', formData.anneeAcademique);
-    //         formDataToSend.append('documentType', formData.acteType);
-    //         formDataToSend.append('studentEmail', formData.email);
-    //         formDataToSend.append('studentPhone', formData.telephone);
-    //         formDataToSend.append('paymentMethod', formData.paymentMethod);
-
-    //         if (formData.acteNaissance) formDataToSend.append('acteNaissance', formData.acteNaissance);
-    //         if (formData.carteEtudiant) formDataToSend.append('carteEtudiant', formData.carteEtudiant);
-    //         if (formData.fichePreinscription) formDataToSend.append('fichePreinscription', formData.fichePreinscription);
-    //         if (formData.diplomeBac) formDataToSend.append('diplomeBac', formData.diplomeBac);
-    //         if (formData.demandeManuscrite) formDataToSend.append('demandeManuscrite', formData.demandeManuscrite);
-
-    //         const response = await api.submitRequest(formDataToSend);
-    //         if (!response.trackingId) {
-    //             throw new Error("Erreur lors de la création de la demande");
-    //         }
-
-    //         setTrackingId(response.trackingId);
-    //         setPaymentReference(response.trackingId); // Utiliser trackingId comme référence temporaire
-    //         setPaymentStatus('pending');
-    //         setCurrentStep(4); // Passer à l'étape de paiement
-
-    //     } catch (error) {
-    //         console.error('Erreur lors de la soumission:', error);
-    //         alert(error.message || "Une erreur est survenue lors de la soumission");
-    //         setIsSubmitting(false);
-    //     }
-    // };
-
-    // Fonction pour ouvrir le widget KKiaPay
-    const handleOpenKkiapay = () => {
-        const amount = getDocumentPrice(formData.acteType, actesTypes); // Obtenir le prix du document
-        setDocumentPrice(amount)
+    const handleOpenKkiapay = async() => {
+        const amount = getDocumentPrice(formData.acteType, actesTypes);
+        setDocumentPrice(amount);
         if (!formData.paymentPhone || !amount) {
             alert("Veuillez saisir un numéro de téléphone valide et vous assurer qu'un type d'acte est sélectionné.");
             return;
         }
 
         setIsSubmitting(true);
-        openKkiapayWidget({
-            amount: amount, // Montant en FCFA
-            api_key: process.env.NEXT_PUBLIC_KKIAPAY_API_KEY || "xxxxxxxxxxxxxxxxxx", // Clé API depuis les variables d'environnement
-            sandbox: true, // Mode sandbox pour les tests
-            email: formData.email,
-            phone: formData.paymentPhone, // Numéro de téléphone pour le paiement
-            // paymentmethod: [formData.paymentMethod]
-        });
-        setIsSubmitting(false);
+        // openKkiapayWidget({
+        //     amount: amount,
+        //     api_key: process.env.NEXT_PUBLIC_KKIAPAY_API_KEY || "xxxxxxxxxxxxxxxxxx",
+        //     sandbox: true,
+        //     email: formData.email,
+        //     phone: formData.paymentPhone,
+        // });
+        try {
+            const formDataToSend = new FormData();
+            formDataToSend.append('matricule', formData.matricule);
+            formDataToSend.append('establishment', formData.etablissement);
+            formDataToSend.append('studyYear', formData.anneeEtude);
+            formDataToSend.append('academicYear', formData.anneeAcademique);
+            formDataToSend.append('documentType', formData.acteType);
+            formDataToSend.append('studentEmail', formData.email);
+            formDataToSend.append('studentPhone', formData.telephone);
+            formDataToSend.append('paymentMethod', formData.paymentMethod);
+            formDataToSend.append('documentPrice', mdocumentPrice.toString());
+            formDataToSend.append('paymentReference', '355xDF8DS');
+
+            if (formData.acteNaissance) formDataToSend.append('acteNaissance', formData.acteNaissance);
+            if (formData.carteEtudiant) formDataToSend.append('carteEtudiant', formData.carteEtudiant);
+            if (formData.fichePreinscription) formDataToSend.append('fichePreinscription', formData.fichePreinscription);
+            if (formData.diplomeBac) formDataToSend.append('diplomeBac', formData.diplomeBac);
+            if (formData.demandeManuscrite) formDataToSend.append('demandeManuscrite', formData.demandeManuscrite);
+
+            const submitResponse = await api.submitRequest(formDataToSend);
+            if (!submitResponse.trackingId) {
+                throw new Error("Erreur lors de la création de la demande");
+            }
+
+            setTrackingId(submitResponse.trackingId);
+            setCurrentStep(5);
+
+            // Send recap email
+            if (studentFullName) {
+                const recapData = {
+                    studentFullName,
+                    email: formData.email,
+                    matricule: formData.matricule,
+                    etablissement: formData.etablissement,
+                    anneeEtude: formData.anneeEtude,
+                    anneeAcademique: formData.anneeAcademique,
+                    documentType: actesTypes.find(acte => acte.id === formData.acteType)?.title || formData.acteType,
+                    documentPrice: `${mdocumentPrice} FCFA`,
+                    trackingId: submitResponse.trackingId,
+                    paymentReference: '456xDF8ES',
+                    uploadedDocuments: Object.entries(filePreviews)
+                        .filter(([_, value]) => value)
+                        .map(([key, value]) => `${key}: ${value}`),
+                };
+                const emailResponse = await api.sendRecap(recapData);
+                if (!emailResponse.success) {
+                    console.error('Erreur lors de l\'envoi du récapitulatif:', emailResponse.message);
+                }
+            }
+        } catch (error) {
+            console.error('Erreur lors de la soumission après paiement:', error);
+            alert(error.message || "Une erreur est survenue lors de la soumission après le paiement. Veuillez contacter le support.");
+        } finally {
+            setIsSubmitting(false);
+        }
+        // setIsSubmitting(false);
     };
 
-    // Étape 4: Paiement (remplacée)
     const renderPaymentStep = () => (
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="p-8 space-y-6 text-center"
+            className="p-8 space-y-6"
         >
             <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center justify-center">
                 <Shield className="mr-2 text-green-500" size={20} />
                 Paiement
             </h3>
             {paymentStatus === 'pending' && (
-                <div className="py-8">
-                    <p className="text-gray-600 mb-4">Veuillez saisir le numéro de téléphone pour effectuer le paiement.</p>
-                    <div className="max-w-md mx-auto mb-6">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Numéro de téléphone (Paiement)</label>
-                        <input
-                            type="tel"
-                            name="paymentPhone"
-                            value={formData.paymentPhone}
-                            onChange={handleChange}
-                            placeholder="Ex: 97000000"
-                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                            required
-                        />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Résumé de la demande */}
+                    <div className="bg-gray-50 p-6 rounded-lg shadow-sm">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-4">Résumé de votre demande</h4>
+                        <div className="space-y-4">
+                            <div>
+                                <p className="text-sm font-medium text-gray-700">Nom de l'étudiant</p>
+                                <p className="text-gray-900">{studentFullName || 'Non renseigné'}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-gray-700">Type de document</p>
+                                <p className="text-gray-900">{actesTypes.find(acte => acte.id === formData.acteType)?.title || 'Non sélectionné'}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-gray-700">Prix</p>
+                                <p className="text-gray-900">{actesTypes.find(acte => acte.id === formData.acteType)?.price || '0 FCFA'}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-gray-700">Numéro de matricule</p>
+                                <p className="text-gray-900">{formData.matricule || 'Non renseigné'}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-gray-700">Établissement</p>
+                                <p className="text-gray-900">{formData.etablissement || 'Non renseigné'}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-gray-700">Année d'étude</p>
+                                <p className="text-gray-900">{formData.anneeEtude || 'Non renseignée'}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-gray-700">Année académique</p>
+                                <p className="text-gray-900">{formData.anneeAcademique || 'Non renseignée'}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-gray-700">Documents fournis</p>
+                                <ul className="text-gray-900 list-disc list-inside">
+                                    {filePreviews.acteNaissance && <li>Acte de naissance: {filePreviews.acteNaissance}</li>}
+                                    {filePreviews.carteEtudiant && <li>Carte d'étudiant: {filePreviews.carteEtudiant}</li>}
+                                    {filePreviews.fichePreinscription && <li>Fiche de préinscription: {filePreviews.fichePreinscription}</li>}
+                                    {filePreviews.diplomeBac && <li>Diplôme du BAC: {filePreviews.diplomeBac}</li>}
+                                    {filePreviews.demandeManuscrite && <li>Demande manuscrite: {filePreviews.demandeManuscrite}</li>}
+                                    {!Object.values(filePreviews).some(preview => preview) && <li>Aucun document fourni</li>}
+                                </ul>
+                            </div>
+                        </div>
                     </div>
-                    <button
-                        onClick={handleOpenKkiapay}
-                        className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors flex items-center mx-auto"
-                        disabled={isSubmitting || !formData.paymentPhone}
-                    >
-                        {isSubmitting ? 'Traitement...' : 'Payer maintenant'} <ArrowRight className="ml-2" size={18} />
-                    </button>
-                    <p className="text-sm text-gray-500 mt-4">Vous serez redirigé vers KKiaPay pour finaliser le paiement.</p>
+                    {/* Formulaire de paiement */}
+                    <div className="flex flex-col justify-center">
+                        <p className="text-gray-600 mb-4 text-center">Veuillez saisir le numéro de téléphone pour effectuer le paiement.</p>
+                        <div className="max-w-md mx-auto mb-6">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Numéro de téléphone (Paiement)</label>
+                            <input
+                                type="tel"
+                                name="paymentPhone"
+                                value={formData.paymentPhone}
+                                onChange={handleChange}
+                                placeholder="Ex: 97000000"
+                                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                required
+                            />
+                        </div>
+                        <button
+                            onClick={handleOpenKkiapay}
+                            className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors flex items-center mx-auto"
+                            disabled={isSubmitting || !formData.paymentPhone}
+                        >
+                            {isSubmitting ? 'Traitement...' : 'Payer maintenant'} <ArrowRight className="ml-2" size={18} />
+                        </button>
+                        <p className="text-sm text-gray-500 mt-4 text-center">Vous serez redirigé vers KKiaPay pour finaliser le paiement.</p>
+                    </div>
                 </div>
             )}
             {paymentStatus === 'failed' && (
@@ -369,7 +455,6 @@ export default function DemandeSection() {
         </motion.div>
     );
 
-    // Étape 5: Confirmation (inchangée, mais incluse pour référence)
     const renderConfirmationStep = () => (
         <motion.div
             initial={{ opacity: 0 }}
@@ -398,8 +483,6 @@ export default function DemandeSection() {
         </motion.div>
     );
 
-    // Le reste du code reste inchangé (étapes 1, 2, 3, etc.)
-    // Intégration dans le rendu principal
     return (
         <section id="demande" className="py-20 px-6 bg-white">
             <div className="container mx-auto max-w-4xl">
@@ -415,7 +498,6 @@ export default function DemandeSection() {
                     </p>
                 </motion.div>
 
-                {/* Stepper */}
                 <div className="flex justify-between mb-12 relative">
                     <div className="absolute top-1/2 left-0 right-0 h-1 bg-gray-200 -z-10"></div>
                     <div
@@ -440,7 +522,6 @@ export default function DemandeSection() {
 
                 <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
                     {currentStep === 1 && (
-                        // Étape 1: Informations étudiant (inchangée)
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -450,6 +531,11 @@ export default function DemandeSection() {
                                 <User className="mr-2 text-green-500" size={20} />
                                 Informations étudiant
                             </h3>
+                            {errorMessage && (
+                                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">
+                                    {errorMessage}
+                                </div>
+                            )}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Numéro de matricule</label>
                                 <input
@@ -512,15 +598,14 @@ export default function DemandeSection() {
                                 <button
                                     onClick={nextStep}
                                     className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors flex items-center"
-                                    disabled={!formData.matricule || !formData.etablissement || !formData.anneeEtude || !formData.anneeAcademique}
+                                    disabled={isSubmitting || !formData.matricule || !formData.etablissement || !formData.anneeEtude || !formData.anneeAcademique}
                                 >
-                                    Suivant <ArrowRight className="ml-2" size={18} />
+                                    {isSubmitting ? 'Vérification...' : 'Suivant'} <ArrowRight className="ml-2" size={18} />
                                 </button>
                             </div>
                         </motion.div>
                     )}
                     {currentStep === 2 && (
-                        // Étape 2: Contact et type d'acte (inchangée)
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -587,7 +672,6 @@ export default function DemandeSection() {
                         </motion.div>
                     )}
                     {currentStep === 3 && (
-                        // Étape 3: Documents (inchangée)
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -643,7 +727,6 @@ export default function DemandeSection() {
                                 >
                                     Suivant <ArrowRight className="ml-2" size={18} />
                                 </button>
-                                
                             </div>
                         </motion.div>
                     )}

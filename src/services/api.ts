@@ -11,6 +11,38 @@ const instance2 = axios.create({
 });
 
 export const api = {
+  sendCustomEmail: async (requestId: number, subject: string, message: string) => {
+    try {
+      const response = await instance2.post(`/requests/${requestId}/email`, {
+        subject,
+        message,
+      })
+      return response.data
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to send email')
+    }
+  },
+
+  async verifyStudent (data: any) {
+    try {
+      const response = await instance.post('/students/verify', data) // Adjust URL based on your AdonisJS server
+      return response.data
+    } catch (error) {
+      console.error('Erreur lors de la vérification:', error)
+      return { success: false, message: 'Aucune correspondance pour les informations saisies.' }
+    }
+  },
+
+  sendRecap: async (data: any): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const response = await instance.post('/emails/send', data) // Adjust URL based on your AdonisJS server
+      return response.data
+    } catch (error) {
+      console.error('Erreur lors de l\'envoi du récapitulatif:', error)
+      return { success: false, message: 'Erreur lors de l\'envoi du récapitulatif par email.' }
+    }
+  },
+
   async submitRequest(data: any) {
     const response = await instance.post('/requests', data);
     return response.data;

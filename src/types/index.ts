@@ -1,4 +1,5 @@
 export interface DocumentRequest {
+    documentPath: boolean;
     id: number;
     trackingId: string;
     studentName: string;

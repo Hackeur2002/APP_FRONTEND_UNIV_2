@@ -5,6 +5,7 @@ import { RequestTable } from "@/components/admin/RequestTable";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { api } from "@/services/api";
 import { DocumentRequest } from "@/types/index";
+import toast from 'react-hot-toast';
 
 export default function RequestsPage() {
   const [requests, setRequests] = useState<DocumentRequest[]>([]);
@@ -14,10 +15,12 @@ export default function RequestsPage() {
     const fetchRequests = async () => {
       try {
         const fetchedRequests = await api.fetchRequests();
+        console.log("fetchedRequests", fetchedRequests);
         setRequests(fetchedRequests);
-        setIsLoading(false);
       } catch (error) {
         console.error('Failed to fetch requests:', error);
+        toast.error('Échec du chargement des demandes');
+      } finally {
         setIsLoading(false);
       }
     };
@@ -31,7 +34,7 @@ export default function RequestsPage() {
         {isLoading ? (
           <p>Chargement...</p>
         ) : (
-          <RequestTable requests={requests} />
+          <RequestTable requests={requests} setRequests={setRequests} />
         )}
       </div>
     </ProtectedRoute>
