@@ -7,12 +7,9 @@ import { api } from "@/services/api";
 import { useKKiaPay } from 'kkiapay-react';
 
 // Fonction pour obtenir le prix du document sélectionné
-const getDocumentPrice = (acteType, actesTypes) => {
+const getDocumentPrice = (acteType: string, actesTypes: any[]) => {
     const selectedActe = actesTypes.find((acte: { id: any; }) => acte.id === acteType);
-    if (selectedActe) {
-        return parseInt(selectedActe.price.replace(' FCFA', ''), 10);
-    }
-    return 0;
+    return selectedActe ? parseInt(selectedActe.price.replace(' FCFA', ''), 10) : 0;
 };
 
 export default function DemandeSection() {
@@ -47,34 +44,36 @@ export default function DemandeSection() {
     const [paymentReference, setPaymentReference] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [studentFullName, setStudentFullName] = useState<string | null>(null);
+    const [studentVerification, setStudentVerification] = useState<any>(null); // Stocker la réponse de vérification
 
     const { openKkiapayWidget, addKkiapayListener, removeKkiapayListener } = useKKiaPay();
 
     const etablissements = [
-        "Faculté des Sciences",
+        // "Faculté des Sciences",
         "Faculté de Médecine (FM)",
         "Faculté d'Agronomie (FA)",
         "Institut Universitaire de Technologie (IUT)",
         "Faculté de Droit et de Sciences Politiques (FDSP)",
         "Faculté de Sciences Economiques et de Gestion (FASEG)",
-        "Faculté de Lettres, Arts et Sciences Humaines (FLASH)",
-        "Institut de Formation et Soins Infirmiers et Obstétricaux (IFSIO)",
-        "Ecole Nationale de Statistique, de Planification et de Démographie (ENSPD)",
-        "Ecole Nationale des Techniciens en Santé publique et Surveillance Épidémiologique (ENATSE)",
-        "Ecole Doctorale des Sciences Agronomiques et de l'Eau (EDSAE)",
-        "Ecole Doctorale Sciences Juridiques, Politiques et Administratives (EDSJPA)"
+        // "Faculté de Lettres, Arts et Sciences Humaines (FLASH)",
+        // "Institut de Formation et Soins Infirmiers et Obstétricaux (IFSIO)",
+        // "Ecole Nationale de Statistique, de Planification et de Démographie (ENSPD)",
+        // "Ecole Nationale des Techniciens en Santé publique et Surveillance Épidémiologique (ENATSE)",
+        // "Ecole Doctorale des Sciences Agronomiques et de l'Eau (EDSAE)",
+        // "Ecole Doctorale Sciences Juridiques, Politiques et Administratives (EDSJPA)"
     ];
 
-    const anneesEtude = [
-        "Licence 1",
-        "Licence 2",
-        "Licence 3",
-        "Master 1",
-        "Master 2",
-        "Doctorat"
-    ];
+    // Extraire les années d'étude par établissement à partir du fichier Excel
+    const studyYearsByEstablishment = {
+        "Faculté de Médecine (FM)": ["MG-MG-1", "MG-MG-2", "MG-MG-3", "MG-MG-4", "MG-MG-5", "MG-MG-6", "MG-MG-7"],
+        "Faculté d'Agronomie (FA)": ["LP-AGRN-1", "LP-AGRN-2", "LP-AGRN-3", "LP-ESR-1", "LP-ESR-2", "LP-ESR-3", "LP-NSA-1", "LP-NSA-2", "LP-NSA-3", "LP-STPA-1", "LP-STPA-2", "LP-STPA-3", "LP-STPV-1", "LP-STPV-2", "LP-STPV-3", "MP-ACCA-1", "MP-ACCA-2", "MP-AE-1", "MP-AE-2", "MP-AGPE-1", "MP-AGPE-2", "MP-AGRN-1", "MP-AGRN-2"],
+        "Institut Universitaire de Technologie (IUT)": ["LP-GB-1", "LP-GB-2", "LP-GB-3", "LP-GC-1", "LP-GC-2", "LP-GC-3", "LP-GE-1", "LP-GE-2", "LP-GE-3", "LP-GRH-1", "LP-GRH-2", "LP-GRH-3", "LP-GTL-1", "LP-GTL-2", "LP-GTL-3", "LP-IG-1", "LP-IG-2", "LP-IG-3", "MP-AIRH-1", "MP-AIRH-2", "MP-CCA-1", "MP-CCA-2", "MP-GEC-1", "MP-GEC-2", "MP-GLIA-1", "MP-GLIA-2", "MP-GTL-1", "MP-GTL-2", "MP-SIAD-1", "MP-SIAD-2"],
+        "Faculté de Droit et de Sciences Politiques (FDSP)": ["LICE-DROIT_PRIVE-1", "LICE-DROIT_PRIVE-2", "LICE-DROIT_PRIVE-3", "LICE-DROIT_PUBLIC-1", "LICE-DROIT_PUBLIC-2", "LICE-DROIT_PUBLIC-3", "LICE-SPRI-1", "LICE-SPRI-2", "LICE-SPRI-3", "MP-ALDD-1", "MP-ALDD-2", "MP-ARH-1", "MP-ARH-2", "MP-ASPGCP-1", "MP-ASPGCP-2", "MP-ATPS-1", "MP-ATPS-2", "MP-DPSC-1", "MP-DPSC-2", "MP-ESSPD-1", "MP-ESSPD-2", "MP-JEA-1", "MP-JEA-2", "MP-RIPI-1", "MP-RIPI-2"],
+        "Faculté de Sciences Economiques et de Gestion (FASEG)": ["LICE-APE-1", "LICE-APE-2", "LICE-APE-3", "LICE-EA-1", "LICE-EA-2", "LICE-EA-3", "LICE-EFCL-1", "LICE-EFCL-2", "LICE-EFCL-3", "LICE-EFI-1", "LICE-EFI-2", "LICE-EFI-3", "LICE-EGE-1", "LICE-EGE-2", "LICE-EGE-3", "LICE-FC-1", "LICE-FC-2", "LICE-FC-3", "LICE-MMO-1", "MP-ACG-1", "MP-ACG-2", "MP-BMF-1", "MP-BMF-2", "MP-EGDL-1", "MP-EGDL-2", "MP-GMPC-1", "MP-GMPC-2", "MP-MGP-1", "MP-MGP-2", "MP-NIPC-1", "MP-NIPC-2"]
+    };
 
     const anneesAcademiques = [
+        "2024-2025",
         "2023-2024",
         "2022-2023",
         "2021-2022",
@@ -160,7 +159,7 @@ export default function DemandeSection() {
     );
 
     useEffect(() => {
-        const successHandler = async (response) => {
+        const successHandler = async (response: { transactionId: React.SetStateAction<string | null> | Blob; }) => {
             console.log('Paiement réussi:', response);
             setPaymentStatus('success');
             setPaymentReference(response.transactionId);
@@ -200,7 +199,7 @@ export default function DemandeSection() {
             }
         };
 
-        const failureHandler = (error) => {
+        const failureHandler = (error: any) => {
             console.log('Paiement échoué:', error);
             setPaymentStatus('failed');
         };
@@ -221,13 +220,13 @@ export default function DemandeSection() {
             try {
                 const verificationData = {
                     matricule: formData.matricule,
-                    etablissement: formData.etablissement,
                     anneeEtude: formData.anneeEtude,
                     anneeAcademique: formData.anneeAcademique,
                 };
                 const result = await api.verifyStudent(verificationData);
                 if (result.success) {
-                    setStudentFullName(result.student?.fullName || null);
+                    setStudentFullName(`${result.student.prenom} ${result.student.nom}`); // Utiliser result.student
+                    setStudentVerification(result.student); // Stocker uniquement les données de l'étudiant
                     setCurrentStep(prev => prev + 1);
                 } else {
                     setErrorMessage(result.message || 'Étudiant non trouvé.');
@@ -254,6 +253,12 @@ export default function DemandeSection() {
             ...prev,
             [name]: value
         }));
+        if (name === 'etablissement') {
+            setFormData(prev => ({
+                ...prev,
+                anneeEtude: '' // Réinitialiser anneeEtude lors du changement d'établissement
+            }));
+        }
         setErrorMessage(null);
     };
 
@@ -280,13 +285,6 @@ export default function DemandeSection() {
         }
 
         setIsSubmitting(true);
-        // openKkiapayWidget({
-        //     amount: amount,
-        //     api_key: process.env.NEXT_PUBLIC_KKIAPAY_API_KEY || "xxxxxxxxxxxxxxxxxx",
-        //     sandbox: true,
-        //     email: formData.email,
-        //     phone: formData.paymentPhone,
-        // });
         try {
             const formDataToSend = new FormData();
             formDataToSend.append('matricule', formData.matricule);
@@ -314,10 +312,9 @@ export default function DemandeSection() {
             setTrackingId(submitResponse.trackingId);
             setCurrentStep(5);
 
-            // Send recap email
-            if (studentFullName) {
+            if (studentVerification) {
                 const recapData = {
-                    studentFullName,
+                    studentFullName: `${studentVerification.prenom} ${studentVerification.nom}`,
                     email: formData.email,
                     matricule: formData.matricule,
                     etablissement: formData.etablissement,
@@ -326,10 +323,21 @@ export default function DemandeSection() {
                     documentType: actesTypes.find(acte => acte.id === formData.acteType)?.title || formData.acteType,
                     documentPrice: `${mdocumentPrice} FCFA`,
                     trackingId: submitResponse.trackingId,
-                    paymentReference: '456xDF8ES',
+                    paymentReference: '456xDF8GT',
                     uploadedDocuments: Object.entries(filePreviews)
                         .filter(([_, value]) => value)
                         .map(([key, value]) => `${key}: ${value}`),
+                    verificationDetails: {
+                        sexe: studentVerification.sexe,
+                        datenaissance: studentVerification.datenaissance,
+                        lieunaissance: studentVerification.lieunaissance,
+                        telephone: studentVerification.telephone,
+                        email: studentVerification.email,
+                        nationalite: studentVerification.nationalite,
+                        statut: studentVerification.statut,
+                        validation1: studentVerification.validation1,
+                        validation2: studentVerification.validation2
+                    }
                 };
                 const emailResponse = await api.sendRecap(recapData);
                 if (!emailResponse.success) {
@@ -342,7 +350,6 @@ export default function DemandeSection() {
         } finally {
             setIsSubmitting(false);
         }
-        // setIsSubmitting(false);
     };
 
     const renderPaymentStep = () => (
@@ -389,6 +396,22 @@ export default function DemandeSection() {
                                 <p className="text-sm font-medium text-gray-700">Année académique</p>
                                 <p className="text-gray-900">{formData.anneeAcademique || 'Non renseignée'}</p>
                             </div>
+                            {studentVerification && (
+                                <div>
+                                    <p className="text-sm font-medium text-gray-700">Détails de vérification</p>
+                                    <ul className="text-gray-900 list-disc list-inside">
+                                        <li>Sexe: {studentVerification.sexe}</li>
+                                        <li>Date de naissance: {studentVerification.datenaissance}</li>
+                                        <li>Lieu de naissance: {studentVerification.lieunaissance}</li>
+                                        <li>Téléphone: {studentVerification.telephone}</li>
+                                        <li>Email: {studentVerification.email}</li>
+                                        <li>Nationalité: {studentVerification.nationalite}</li>
+                                        <li>Statut: {studentVerification.statut}</li>
+                                        <li>Validation 1: {studentVerification.validation1}</li>
+                                        <li>Validation 2: {studentVerification.validation2}</li>
+                                    </ul>
+                                </div>
+                            )}
                             <div>
                                 <p className="text-sm font-medium text-gray-700">Documents fournis</p>
                                 <ul className="text-gray-900 list-disc list-inside">
@@ -573,8 +596,8 @@ export default function DemandeSection() {
                                         required
                                     >
                                         <option value="" hidden>Sélectionnez votre année</option>
-                                        {anneesEtude.map((annee, index) => (
-                                            <option key={index} value={annee}>{annee}</option>
+                                        {formData.etablissement && studyYearsByEstablishment[formData.etablissement]?.map((year: any, index: any) => (
+                                            <option key={index} value={year}>{year}</option>
                                         ))}
                                     </select>
                                 </div>
