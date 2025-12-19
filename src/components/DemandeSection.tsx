@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { FileText, ChevronRight, ArrowRight, Menu, Upload, X, Check, Book, Calendar, Clock, FileInput, FileDigit, Shield, Mail, Phone, HelpCircle, User, BookOpen, Award, FileSignature } from 'lucide-react';
 import { api } from "@/services/api";
 import { useKKiaPay } from 'kkiapay-react';
+import { generatePaymentReference } from "@/lib/utils";
 
 // Fonction pour obtenir le prix du document sélectionné
 const getDocumentPrice = (acteType: string, actesTypes: any[]) => {
@@ -296,7 +297,7 @@ export default function DemandeSection() {
             formDataToSend.append('studentPhone', formData.telephone);
             formDataToSend.append('paymentMethod', formData.paymentMethod);
             formDataToSend.append('documentPrice', mdocumentPrice.toString());
-            formDataToSend.append('paymentReference', '356xDF8DS');
+            formDataToSend.append('paymentReference', generatePaymentReference());
 
             if (formData.acteNaissance) formDataToSend.append('acteNaissance', formData.acteNaissance);
             if (formData.carteEtudiant) formDataToSend.append('carteEtudiant', formData.carteEtudiant);
@@ -323,7 +324,7 @@ export default function DemandeSection() {
                     documentType: actesTypes.find(acte => acte.id === formData.acteType)?.title || formData.acteType,
                     documentPrice: `${mdocumentPrice} FCFA`,
                     trackingId: submitResponse.trackingId,
-                    paymentReference: '456xDF8TT',
+                    paymentReference: generatePaymentReference(),
                     uploadedDocuments: Object.entries(filePreviews)
                         .filter(([_, value]) => value)
                         .map(([key, value]) => `${key}: ${value}`),
