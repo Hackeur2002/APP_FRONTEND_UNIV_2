@@ -296,7 +296,7 @@ export default function DemandeSection() {
             formDataToSend.append('studentPhone', formData.telephone);
             formDataToSend.append('paymentMethod', formData.paymentMethod);
             formDataToSend.append('documentPrice', mdocumentPrice.toString());
-            formDataToSend.append('paymentReference', '355xDF8DS');
+            formDataToSend.append('paymentReference', '356xDF8DS');
 
             if (formData.acteNaissance) formDataToSend.append('acteNaissance', formData.acteNaissance);
             if (formData.carteEtudiant) formDataToSend.append('carteEtudiant', formData.carteEtudiant);
@@ -323,7 +323,7 @@ export default function DemandeSection() {
                     documentType: actesTypes.find(acte => acte.id === formData.acteType)?.title || formData.acteType,
                     documentPrice: `${mdocumentPrice} FCFA`,
                     trackingId: submitResponse.trackingId,
-                    paymentReference: '456xDF8GT',
+                    paymentReference: '456xDF8TT',
                     uploadedDocuments: Object.entries(filePreviews)
                         .filter(([_, value]) => value)
                         .map(([key, value]) => `${key}: ${value}`),
