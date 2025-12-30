@@ -1,11 +1,19 @@
 'use client'
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { FileText, ChevronRight, ArrowRight, Menu, Upload, X, Check, Book, Calendar, Clock, FileInput, FileDigit, Shield, Mail, Phone, HelpCircle, User, BookOpen, Award, FileSignature } from 'lucide-react';
 import { api } from "@/services/api";
-import { useKKiaPay } from 'kkiapay-react';
 import { generatePaymentReference } from "@/lib/utils";
+
+// Déclaration des types pour TresorPay
+declare global {
+  interface Window {
+    TresorPay: {
+      init: (options: any) => any;
+    };
+  }
+}
 
 // Fonction pour obtenir le prix du document sélectionné
 const getDocumentPrice = (acteType: string, actesTypes: any[]) => {
@@ -46,8 +54,11 @@ export default function DemandeSection() {
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [studentFullName, setStudentFullName] = useState<string | null>(null);
     const [studentVerification, setStudentVerification] = useState<any>(null); // Stocker la réponse de vérification
-
-    const { openKkiapayWidget, addKkiapayListener, removeKkiapayListener } = useKKiaPay();
+    const [tresorPayLoaded, setTresorPayLoaded] = useState(false);
+    const [paymentOption, setPaymentOption] = useState<'button' | 'embedded' | null>(null);
+    const tresorPayWidgetRef = useRef<any>(null);
+    const tresorPayEmbedRef = useRef<HTMLDivElement>(null);
+    const TRESORPAY_PUBLIC_KEY = 'pk_live_AwUzBkdq8qaZ2E4RDtFOZvQy';
 
     const etablissements = [
         // "Faculté des Sciences",
@@ -159,60 +170,74 @@ export default function DemandeSection() {
         </div>
     );
 
+    // Fonction pour soumettre la demande après paiement réussi
+    const handlePaymentSuccess = async (paymentResponse: any) => {
+        console.log('✅ Paiement réussi:', paymentResponse);
+        setPaymentStatus('success');
+        setPaymentReference(paymentResponse.transaction_id || paymentResponse.id || generatePaymentReference());
+
+        setIsSubmitting(true);
+        try {
+            const formDataToSend = new FormData();
+            formDataToSend.append('matricule', formData.matricule);
+            formDataToSend.append('establishment', formData.etablissement);
+            formDataToSend.append('studyYear', formData.anneeEtude);
+            formDataToSend.append('academicYear', formData.anneeAcademique);
+            formDataToSend.append('documentType', formData.acteType);
+            formDataToSend.append('studentEmail', formData.email);
+            formDataToSend.append('studentPhone', formData.telephone);
+            formDataToSend.append('paymentMethod', 'tresorpay');
+            formDataToSend.append('documentPrice', '1'); // 1 FCFA pour les tests
+            formDataToSend.append('paymentReference', paymentResponse.transaction_id || paymentResponse.id || generatePaymentReference());
+
+            if (formData.acteNaissance) formDataToSend.append('acteNaissance', formData.acteNaissance);
+            if (formData.carteEtudiant) formDataToSend.append('carteEtudiant', formData.carteEtudiant);
+            if (formData.fichePreinscription) formDataToSend.append('fichePreinscription', formData.fichePreinscription);
+            if (formData.diplomeBac) formDataToSend.append('diplomeBac', formData.diplomeBac);
+            if (formData.demandeManuscrite) formDataToSend.append('demandeManuscrite', formData.demandeManuscrite);
+
+            const submitResponse = await api.submitRequest(formDataToSend);
+            if (!submitResponse.trackingId) {
+                throw new Error("Erreur lors de la création de la demande");
+            }
+
+            setTrackingId(submitResponse.trackingId);
+            setCurrentStep(5);
+        } catch (error: any) {
+            console.error('❌ Erreur lors de la soumission après paiement:', error);
+            alert(error.message || "Une erreur est survenue lors de la soumission après le paiement. Veuillez contacter le support.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handlePaymentFailure = (error: any) => {
+        console.log('❌ Paiement échoué:', error);
+        setPaymentStatus('failed');
+    };
+
+    // Vérifier si TresorPay est chargé
     useEffect(() => {
-        const successHandler = async (response: { transactionId: React.SetStateAction<string | null> | Blob; }) => {
-            console.log('Paiement réussi:', response);
-            setPaymentStatus('success');
-            setPaymentReference(response.transactionId);
-
-            setIsSubmitting(true);
-            try {
-                const formDataToSend = new FormData();
-                formDataToSend.append('matricule', formData.matricule);
-                formDataToSend.append('establishment', formData.etablissement);
-                formDataToSend.append('studyYear', formData.anneeEtude);
-                formDataToSend.append('academicYear', formData.anneeAcademique);
-                formDataToSend.append('documentType', formData.acteType);
-                formDataToSend.append('studentEmail', formData.email);
-                formDataToSend.append('studentPhone', formData.telephone);
-                formDataToSend.append('paymentMethod', formData.paymentMethod);
-                formDataToSend.append('documentPrice', mdocumentPrice.toString());
-                formDataToSend.append('paymentReference', response.transactionId);
-
-                if (formData.acteNaissance) formDataToSend.append('acteNaissance', formData.acteNaissance);
-                if (formData.carteEtudiant) formDataToSend.append('carteEtudiant', formData.carteEtudiant);
-                if (formData.fichePreinscription) formDataToSend.append('fichePreinscription', formData.fichePreinscription);
-                if (formData.diplomeBac) formDataToSend.append('diplomeBac', formData.diplomeBac);
-                if (formData.demandeManuscrite) formDataToSend.append('demandeManuscrite', formData.demandeManuscrite);
-
-                const submitResponse = await api.submitRequest(formDataToSend);
-                if (!submitResponse.trackingId) {
-                    throw new Error("Erreur lors de la création de la demande");
-                }
-
-                setTrackingId(submitResponse.trackingId);
-                setCurrentStep(5);
-            } catch (error) {
-                console.error('Erreur lors de la soumission après paiement:', error);
-                alert(error.message || "Une erreur est survenue lors de la soumission après le paiement. Veuillez contacter le support.");
-            } finally {
-                setIsSubmitting(false);
+        const checkTresorPay = () => {
+            if (typeof window !== 'undefined' && window.TresorPay) {
+                setTresorPayLoaded(true);
             }
         };
 
-        const failureHandler = (error: any) => {
-            console.log('Paiement échoué:', error);
-            setPaymentStatus('failed');
-        };
+        // Vérifier immédiatement
+        checkTresorPay();
 
-        addKkiapayListener('success', successHandler);
-        addKkiapayListener('failed', failureHandler);
+        // Vérifier périodiquement si le script se charge après
+        const interval = setInterval(() => {
+            if (!tresorPayLoaded) {
+                checkTresorPay();
+            } else {
+                clearInterval(interval);
+            }
+        }, 100);
 
-        return () => {
-            removeKkiapayListener('success', successHandler);
-            removeKkiapayListener('failed', failureHandler);
-        };
-    }, [addKkiapayListener, removeKkiapayListener, formData, mdocumentPrice]);
+        return () => clearInterval(interval);
+    }, [tresorPayLoaded]);
 
     const nextStep = async () => {
         if (currentStep === 1) {
@@ -277,81 +302,139 @@ export default function DemandeSection() {
         }
     };
 
-    const handleOpenKkiapay = async() => {
-        const amount = getDocumentPrice(formData.acteType, actesTypes);
-        setDocumentPrice(amount);
-        if (!formData.paymentPhone || !amount) {
-            alert("Veuillez saisir un numéro de téléphone valide et vous assurer qu'un type d'acte est sélectionné.");
+    // Initialiser le paiement TresorPay avec bouton
+    const handleTresorPayButton = () => {
+        console.log('🔘 Bouton de paiement cliqué');
+        
+        if (!tresorPayLoaded || !window.TresorPay) {
+            console.error('❌ TresorPay n\'est pas encore chargé');
+            alert('Le système de paiement est en cours de chargement. Veuillez réessayer dans quelques instants.');
             return;
         }
 
-        setIsSubmitting(true);
+        if (!formData.email) {
+            alert("Veuillez remplir votre email avant de procéder au paiement.");
+            return;
+        }
+
+        const testAmount = 1; // 1 FCFA pour les tests
+
         try {
-            const formDataToSend = new FormData();
-            formDataToSend.append('matricule', formData.matricule);
-            formDataToSend.append('establishment', formData.etablissement);
-            formDataToSend.append('studyYear', formData.anneeEtude);
-            formDataToSend.append('academicYear', formData.anneeAcademique);
-            formDataToSend.append('documentType', formData.acteType);
-            formDataToSend.append('studentEmail', formData.email);
-            formDataToSend.append('studentPhone', formData.telephone);
-            formDataToSend.append('paymentMethod', formData.paymentMethod);
-            formDataToSend.append('documentPrice', mdocumentPrice.toString());
-            formDataToSend.append('paymentReference', generatePaymentReference());
+            // Séparer le nom complet en prénom et nom
+            const nameParts = studentFullName ? studentFullName.split(' ') : ['', ''];
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || '';
 
-            if (formData.acteNaissance) formDataToSend.append('acteNaissance', formData.acteNaissance);
-            if (formData.carteEtudiant) formDataToSend.append('carteEtudiant', formData.carteEtudiant);
-            if (formData.fichePreinscription) formDataToSend.append('fichePreinscription', formData.fichePreinscription);
-            if (formData.diplomeBac) formDataToSend.append('diplomeBac', formData.diplomeBac);
-            if (formData.demandeManuscrite) formDataToSend.append('demandeManuscrite', formData.demandeManuscrite);
+            const documentTitle = actesTypes.find(acte => acte.id === formData.acteType)?.title || 'document';
 
-            const submitResponse = await api.submitRequest(formDataToSend);
-            if (!submitResponse.trackingId) {
-                throw new Error("Erreur lors de la création de la demande");
-            }
-
-            setTrackingId(submitResponse.trackingId);
-            setCurrentStep(5);
-
-            if (studentVerification) {
-                const recapData = {
-                    studentFullName: `${studentVerification.prenom} ${studentVerification.nom}`,
+            const tresorPayOptions = {
+                public_key: TRESORPAY_PUBLIC_KEY,
+                transaction: {
+                    amount: testAmount,
+                    description: `Paiement pour ${documentTitle} - ${formData.matricule}`
+                },
+                customer: {
                     email: formData.email,
-                    matricule: formData.matricule,
-                    etablissement: formData.etablissement,
-                    anneeEtude: formData.anneeEtude,
-                    anneeAcademique: formData.anneeAcademique,
-                    documentType: actesTypes.find(acte => acte.id === formData.acteType)?.title || formData.acteType,
-                    documentPrice: `${mdocumentPrice} FCFA`,
-                    trackingId: submitResponse.trackingId,
-                    paymentReference: generatePaymentReference(),
-                    uploadedDocuments: Object.entries(filePreviews)
-                        .filter(([_, value]) => value)
-                        .map(([key, value]) => `${key}: ${value}`),
-                    verificationDetails: {
-                        sexe: studentVerification.sexe,
-                        datenaissance: studentVerification.datenaissance,
-                        lieunaissance: studentVerification.lieunaissance,
-                        telephone: studentVerification.telephone,
-                        email: studentVerification.email,
-                        nationalite: studentVerification.nationalite,
-                        statut: studentVerification.statut,
-                        validation1: studentVerification.validation1,
-                        validation2: studentVerification.validation2
+                    lastname: lastName,
+                    firstname: firstName,
+                    phone: formData.telephone || formData.paymentPhone
+                },
+                currency: {
+                    iso: 'XOF'
+                }
+            };
+
+            console.log('🔧 Options TresorPay:', tresorPayOptions);
+
+            // Initialiser TresorPay sans sélecteur, puis ouvrir manuellement (selon la documentation)
+            if (typeof window !== 'undefined' && window.TresorPay) {
+                try {
+                    // Initialiser sans sélecteur - retourne un widget avec méthode open()
+                    tresorPayWidgetRef.current = (window.TresorPay.init as any)(tresorPayOptions);
+                    
+                    console.log('🔍 TresorPay Widget initialisé:', tresorPayWidgetRef.current);
+                    console.log('📋 Type:', typeof tresorPayWidgetRef.current);
+                    if (tresorPayWidgetRef.current) {
+                        console.log('📋 Méthodes disponibles:', Object.keys(tresorPayWidgetRef.current));
                     }
-                };
-                const emailResponse = await api.sendRecap(recapData);
-                if (!emailResponse.success) {
-                    console.error('Erreur lors de l\'envoi du récapitulatif:', emailResponse.message);
+                    
+                    // Ouvrir le widget immédiatement
+                    if (tresorPayWidgetRef.current && typeof tresorPayWidgetRef.current.open === 'function') {
+                        console.log('🚀 Ouverture du modal TresorPay...');
+                        setTimeout(() => {
+                            try {
+                                tresorPayWidgetRef.current.open();
+                            } catch (openError) {
+                                console.error('❌ Erreur lors de l\'ouverture:', openError);
+                                handlePaymentFailure(openError);
+                            }
+                        }, 100);
+                    } else {
+                        console.error('❌ La méthode open() n\'est pas disponible');
+                        console.log('📋 Structure complète:', JSON.stringify(tresorPayWidgetRef.current, null, 2));
+                    }
+                } catch (initError) {
+                    console.error('❌ Erreur lors de l\'initialisation TresorPay:', initError);
+                    handlePaymentFailure(initError);
                 }
             }
+
         } catch (error) {
-            console.error('Erreur lors de la soumission après paiement:', error);
-            alert(error.message || "Une erreur est survenue lors de la soumission après le paiement. Veuillez contacter le support.");
-        } finally {
-            setIsSubmitting(false);
+            console.error('❌ Erreur lors de l\'initialisation de TresorPay:', error);
+            handlePaymentFailure(error);
         }
     };
+
+    // Initialiser le paiement TresorPay avec intégration embarquée
+    useEffect(() => {
+        if (paymentOption === 'embedded' && tresorPayLoaded && window.TresorPay && tresorPayEmbedRef.current) {
+            const testAmount = 1; // 1 FCFA pour les tests
+            
+            // Nettoyer le conteneur d'abord
+            tresorPayEmbedRef.current.innerHTML = '';
+
+            try {
+                const nameParts = studentFullName ? studentFullName.split(' ') : ['', ''];
+                const firstName = nameParts[0] || '';
+                const lastName = nameParts.slice(1).join(' ') || '';
+
+                // Trouver le titre du document
+                const documentTitle = actesTypes.find(acte => acte.id === formData.acteType)?.title || 'document';
+
+                const tresorPayOptions = {
+                    public_key: TRESORPAY_PUBLIC_KEY,
+                    transaction: {
+                        amount: testAmount,
+                        description: `Paiement pour ${documentTitle} - ${formData.matricule}`
+                    },
+                    customer: {
+                        email: formData.email,
+                        lastname: lastName,
+                        firstname: firstName,
+                        phone: formData.telephone || formData.paymentPhone
+                    },
+                    currency: {
+                        iso: 'XOF'
+                    },
+                    container: '#tresorpay-embed',
+                    onSuccess: (response: any) => {
+                        console.log('✅ TresorPay Embedded Success Callback:', response);
+                        handlePaymentSuccess(response);
+                    },
+                    onError: (error: any) => {
+                        console.log('❌ TresorPay Embedded Error Callback:', error);
+                        handlePaymentFailure(error);
+                    }
+                };
+
+                window.TresorPay.init(tresorPayOptions);
+
+            } catch (error) {
+                console.error('❌ Erreur lors de l\'initialisation de TresorPay Embedded:', error);
+                handlePaymentFailure(error);
+            }
+        }
+    }, [paymentOption, tresorPayLoaded, formData.email, formData.telephone, formData.acteType, formData.matricule, studentFullName]);
 
     const renderPaymentStep = () => (
         <motion.div
@@ -426,29 +509,62 @@ export default function DemandeSection() {
                             </div>
                         </div>
                     </div>
-                    {/* Formulaire de paiement */}
+                    {/* Formulaire de paiement TresorPay */}
                     <div className="flex flex-col justify-center">
-                        <p className="text-gray-600 mb-4 text-center">Veuillez saisir le numéro de téléphone pour effectuer le paiement.</p>
-                        <div className="max-w-md mx-auto mb-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Numéro de téléphone (Paiement)</label>
-                            <input
-                                type="tel"
-                                name="paymentPhone"
-                                value={formData.paymentPhone}
-                                onChange={handleChange}
-                                placeholder="Ex: 97000000"
-                                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                required
-                            />
+                        <p className="text-gray-600 mb-6 text-center">Choisissez votre méthode de paiement TresorPay</p>
+                        
+                        {/* Options de paiement */}
+                        <div className="space-y-4 mb-6">
+                            <button
+                                id="tresorpay-button-pay"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    handleTresorPayButton();
+                                }}
+                                className="w-full px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                                disabled={isSubmitting || !tresorPayLoaded || !formData.email}
+                            >
+                                <Shield className="mr-2" size={20} />
+                                {isSubmitting ? 'Traitement...' : 'Payer avec Bouton de paiement'}
+                            </button>
+                            
+                            <button
+                                onClick={() => setPaymentOption('embedded')}
+                                className="w-full px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                                disabled={isSubmitting || !tresorPayLoaded || !formData.email}
+                            >
+                                <Shield className="mr-2" size={20} />
+                                Payer avec Intégration embarquée
+                            </button>
                         </div>
-                        <button
-                            onClick={handleOpenKkiapay}
-                            className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors flex items-center mx-auto"
-                            disabled={isSubmitting || !formData.paymentPhone}
-                        >
-                            {isSubmitting ? 'Traitement...' : 'Payer maintenant'} <ArrowRight className="ml-2" size={18} />
-                        </button>
-                        <p className="text-sm text-gray-500 mt-4 text-center">Vous serez redirigé vers KKiaPay pour finaliser le paiement.</p>
+
+                        {!tresorPayLoaded && (
+                            <p className="text-sm text-yellow-600 text-center mb-4">
+                                ⏳ Chargement du système de paiement...
+                            </p>
+                        )}
+
+                        {/* Zone d'intégration embarquée */}
+                        {paymentOption === 'embedded' && (
+                            <div className="mt-6">
+                                <div 
+                                    id="tresorpay-embed" 
+                                    ref={tresorPayEmbedRef}
+                                    className="w-full h-[600px] border border-gray-200 rounded-lg p-6 overflow-auto"
+                                    style={{ minHeight: '600px' }}
+                                ></div>
+                                <button
+                                    onClick={() => setPaymentOption(null)}
+                                    className="mt-4 w-full px-4 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                                >
+                                    Annuler
+                                </button>
+                            </div>
+                        )}
+
+                        <p className="text-xs text-gray-500 mt-4 text-center">
+                            Montant de test: 1 FCFA | Paiement sécurisé par TresorPay
+                        </p>
                     </div>
                 </div>
             )}
@@ -461,9 +577,11 @@ export default function DemandeSection() {
                     <p className="text-gray-600 mb-6">Une erreur est survenue lors du traitement de votre paiement.</p>
                     <div className="flex justify-center gap-4">
                         <button
-                            onClick={handleOpenKkiapay}
+                            onClick={() => {
+                                setPaymentStatus('pending');
+                                setPaymentOption(null);
+                            }}
                             className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
-                            disabled={!formData.paymentPhone}
                         >
                             Réessayer le paiement
                         </button>
@@ -597,7 +715,7 @@ export default function DemandeSection() {
                                         required
                                     >
                                         <option value="" hidden>Sélectionnez votre année</option>
-                                        {formData.etablissement && studyYearsByEstablishment[formData.etablissement]?.map((year: any, index: any) => (
+                                        {formData.etablissement && (studyYearsByEstablishment as any)[formData.etablissement]?.map((year: any, index: any) => (
                                             <option key={index} value={year}>{year}</option>
                                         ))}
                                     </select>

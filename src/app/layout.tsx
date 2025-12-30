@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from 'react-hot-toast';
+import Script from 'next/script';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,6 +29,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <Script
+          src="https://cdn.tresorpay.bj/checkout.js?v=1.1.7"
+          strategy="beforeInteractive"
+        />
         <Toaster position="top-right" />
         {children}
       </body>

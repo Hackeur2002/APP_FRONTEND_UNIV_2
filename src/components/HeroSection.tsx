@@ -35,6 +35,8 @@ export default function HeroSection() {
             <a href="#services" className="hover:text-blue-200 transition-colors">Services</a>
             <a href="#process" className="hover:text-blue-200 transition-colors">Procédure</a>
             <a href="#demande" className="hover:text-blue-200 transition-colors">Demande</a>
+            <a href="#statut" className="hover:text-blue-200 transition-colors">Statut d'une demande</a>
+            <a href="#verifier" className="hover:text-blue-200 transition-colors">Vérifier un acte</a>
             <a href="#faq" className="hover:text-blue-200 transition-colors">FAQ</a>
             <a href="#contact" className="px-4 py-2 bg-emerald-900 bg-opacity-10 hover:bg-opacity-20 hover:bg-emerald-800 rounded-full transition-colors">
               Contact
@@ -55,6 +57,8 @@ export default function HeroSection() {
               <a href="#services" className="hover:text-blue-200" onClick={() => setMenuOpen(false)}>Services</a>
               <a href="#process" className="hover:text-blue-200" onClick={() => setMenuOpen(false)}>Procédure</a>
               <a href="#demande" className="hover:text-blue-200" onClick={() => setMenuOpen(false)}>Demande</a>
+              <a href="#statut" className="hover:text-blue-200" onClick={() => setMenuOpen(false)}>Statut d'une demande</a>
+              <a href="#verifier" className="hover:text-blue-200" onClick={() => setMenuOpen(false)}>Vérifier un acte</a>
               <a href="#faq" className="hover:text-blue-200" onClick={() => setMenuOpen(false)}>FAQ</a>
               <a href="#contact" className="hover:text-blue-200" onClick={() => setMenuOpen(false)}>Contact</a>
             </div>

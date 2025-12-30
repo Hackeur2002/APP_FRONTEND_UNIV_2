@@ -7,6 +7,7 @@ import ServicesSection from '@/components/ServicesSection';
 import ProcessusSection from '@/components/ProcessusSection';
 import StatsSection from '@/components/StatsSection';
 import DemandeSection from '@/components/DemandeSection';
+import StatusCheckSection from '@/components/StatusCheckSection';
 import FaqSection from '@/components/FaqSection';
 import ContactSection from '@/components/ContactSection';
 import FooterSection from '@/components/FooterSection';
@@ -209,6 +210,9 @@ export default function ModernLanding() {
 
       {/* Section Demande */}
       <DemandeSection />
+
+      {/* Section Vérification du Statut */}
+      <StatusCheckSection />
 
       {/* Section FAQ */}
       <FaqSection />

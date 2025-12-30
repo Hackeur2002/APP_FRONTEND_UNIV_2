@@ -63,6 +63,18 @@ export const api = {
     return response.data;
   },
 
+  async checkRequestStatusByTrackingId(trackingId: string) {
+    try {
+      const response = await instance.get(`/requests/${trackingId}/status`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        throw new Error('Aucune demande trouvée avec ce code de suivi');
+      }
+      throw new Error(error.response?.data?.message || 'Erreur lors de la vérification du statut');
+    }
+  },
+
   async validateRequest(requestId: number, approved: boolean, comments: string) {
     try {
       const response = await instance2.post(`/requests/validate/${requestId}`, {
