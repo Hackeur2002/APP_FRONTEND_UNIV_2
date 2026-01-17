@@ -2,51 +2,58 @@
 
 import React from "react"
 import { motion } from "framer-motion"
-import { FileText, ChevronRight, Check, BookOpen, Award, FileSignature } from 'lucide-react';
+import { FileText, ChevronRight, Check, BookOpen, Award, FileSpreadsheet, Route, ClipboardList, GraduationCap, BadgeCheck, FileCheck } from 'lucide-react';
 
 export default function ServicesSection() {
     const actesTypes = [
         {
             id: 'diplome',
             title: "Diplôme",
-            description: "Obtenez votre diplôme",
-            icon: <Award className="text-blue-500" size={24} />,
+            description: "Demandez votre diplôme de Licence, Master ou Doctorat",
+            icon: <GraduationCap className="text-blue-500" size={24} />,
             price: "20 000 FCFA"
         },
         {
-            id: 'releve',
-            title: "Relevé de notes",
-            description: "Demandez votre relevé de notes officiel",
-            icon: <BookOpen className="text-green-500" size={24} />,
-            price: "5 000 FCFA"
-        },
-        {
-            id: 'attestation',
-            title: "Attestation",
-            description: "Attestation de scolarité ou de réussite",
-            icon: <FileSignature className="text-purple-500" size={24} />,
-            price: "5 000 FCFA"
-        },
-        {
-            id: 'bulletin',
-            title: "Bulletin de notes",
-            description: "Bulletin semestriel détaillé",
-            icon: <FileText className="text-orange-500" size={24} />,
-            price: "5 000 FCFA"
-        },
-        {
             id: 'licence',
-            title: "Attestation de licence",
-            description: "Document officiel de validation de licence",
-            icon: <Check className="text-red-500" size={24} />,
+            title: "Attestation de succès - Licence",
+            description: "Demandez votre attestation de succès en Licence",
+            icon: <Award className="text-red-500" size={24} />,
             price: "2 000 FCFA"
         },
         {
             id: 'master',
-            title: "Attestation de master",
-            description: "Document officiel de validation de master",
-            icon: <Check className="text-indigo-500" size={24} />,
+            title: "Attestation de succès - Master",
+            description: "Demandez votre attestation de succès en Master",
+            icon: <Award className="text-indigo-500" size={24} />,
             price: "5 000 FCFA"
+        },
+        {
+            id: 'releve',
+            title: "Relevé de notes Licence",
+            description: "Demandez votre relevé de notes de Licence",
+            icon: <FileSpreadsheet className="text-green-500" size={24} />,
+            price: "5 000 FCFA"
+        },
+        {
+            id: 'bulletin',
+            title: "Relevé de notes Master",
+            description: "Demandez votre relevé de notes de Master",
+            icon: <FileSpreadsheet className="text-orange-500" size={24} />,
+            price: "10 000 FCFA"
+        },
+        {
+            id: 'attestation',
+            title: "Certificat d'inscription",
+            description: "Demandez votre certificat d'inscription",
+            icon: <FileCheck className="text-purple-500" size={24} />,
+            price: "2 000 FCFA"
+        },
+        {
+            id: 'parcours',
+            title: "Parcours de l'étudiant",
+            description: "Demandez votre parcours académique complet",
+            icon: <Route className="text-green-500" size={24} />,
+            price: "2 000 FCFA"
         }
     ];
 

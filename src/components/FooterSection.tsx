@@ -1,54 +1,61 @@
 'use client'
 
-import { FileText, Check, Clock, Mail, Phone, BookOpen, Award, FileSignature, LocateIcon } from 'lucide-react';
+import { FileText, Check, Clock, Mail, Phone, BookOpen, Award, FileSignature, LocateIcon, CheckSquare } from 'lucide-react';
 import Image from 'next/image';
 import logo from '../../public/images/up_logo.png';
 
 export default function FooterSection() {
     // Données
-  const actesTypes = [
-    {
-      id: 'diplome',
-      title: "Diplôme",
-      description: "Obtenez votre diplôme",
-      icon: <Award className="text-blue-500" size={24} />,
-      price: "3000 FCFA"
-    },
-    {
-      id: 'releve',
-      title: "Relevé de notes",
-      description: "Demandez votre relevé de notes officiel",
-      icon: <BookOpen className="text-green-500" size={24} />,
-      price: "4000 FCFA"
-    },
-    {
-      id: 'attestation',
-      title: "Attestation",
-      description: "Attestation de scolarité ou de réussite",
-      icon: <FileSignature className="text-purple-500" size={24} />,
-      price: "5000 FCFA"
-    },
-    {
-      id: 'bulletin',
-      title: "Bulletin de notes",
-      description: "Bulletin semestriel détaillé",
-      icon: <FileText className="text-orange-500" size={24} />,
-      price: "2500 FCFA"
-    },
-    {
-      id: 'licence',
-      title: "Attestation de licence",
-      description: "Document officiel de validation de licence",
-      icon: <Check className="text-red-500" size={24} />,
-      price: "3000 FCFA"
-    },
-    {
-      id: 'master',
-      title: "Attestation de master",
-      description: "Document officiel de validation de master",
-      icon: <Check className="text-indigo-500" size={24} />,
-      price: "5000 FCFA"
-    }
+    const actesTypes = [
+      {
+          id: 'diplome',
+          title: "Diplôme",
+          description: "Demandez votre diplôme de Licence, Master ou Doctorat",
+          icon: <Award className="text-blue-500" size={24} />,
+          price: "20 000 FCFA"
+      },
+      {
+          id: 'licence',
+          title: "Attestation de succès - Licence",
+          description: "Demandez votre attestation de succès en Licence",
+          icon: <BookOpen className="text-red-500" size={24} />,
+          price: "2 000 FCFA"
+      },
+      {
+          id: 'master',
+          title: "Attestation de succès - Master",
+          description: "Demandez votre attestation de succès en Master",
+          icon: <BookOpen className="text-indigo-500" size={24} />,
+          price: "5 000 FCFA"
+      },
+      {
+          id: 'releve',
+          title: "Relevé de notes Licence",
+          description: "Demandez votre relevé de notes de Licence",
+          icon: <FileText className="text-green-500" size={24} />,
+          price: "5 000 FCFA"
+      },
+      {
+          id: 'bulletin',
+          title: "Relevé de notes Master",
+          description: "Demandez votre relevé de notes de Master",
+          icon: <FileText className="text-orange-500" size={24} />,
+          price: "10 000 FCFA"
+      },
+      {
+          id: 'attestation',
+          title: "Certificat d'inscription",
+          description: "Demandez votre certificat d'inscription",
+          icon: <CheckSquare className="text-purple-500" size={24} />,
+          price: "2 000 FCFA"
+      },
+      {
+          id: 'parcours',
+          title: "Parcours de l'étudiant",
+          description: "Demandez votre parcours académique complet",
+          icon: <FileSignature className="text-green-500" size={24} />,
+          price: "2 000 FCFA"
+      }
   ];
     return (
         <footer className="bg-gray-900 text-white py-12 px-6">
@@ -77,8 +84,9 @@ export default function FooterSection() {
             <div>
               <h4 className="text-lg font-semibold mb-4">Liens utiles</h4>
               <ul className="space-y-2">
-                <li><a href="https://www.univ-parakou.bj" target='_blank' className="text-gray-400 hover:text-white">Université</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white">Règlement</a></li>
+                <li><a href="https://www.univ-parakou.bj" target='_blank' className="text-gray-400 hover:text-white">Université de Parakou</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white">Mentions légales</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white">Conditions d'utilisation</a></li>
                 <li><a href="#faq" className="text-gray-400 hover:text-white">FAQ</a></li>
                 <li><a href="#process" className="text-gray-400 hover:text-white">Procédure</a></li>
               </ul>

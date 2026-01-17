@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Plateforme de délivrance des actes académiques", // Front office / Front end
-  description: "Plateforme de demande des actes académiques sécurisés à l'Université de Parakou",
+  description: "Plateforme de demande des actes académiques sécurisés de l'Université de Parakou",
 };
 
 export default function RootLayout({

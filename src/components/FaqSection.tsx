@@ -16,7 +16,7 @@ export default function FaqSection() {
         },
         {
             question: "Puis-je faire une demande pour un ancien étudiant ?",
-            answer: "Oui, vous pouvez faire une demande même si vous n'êtes plus étudiant. Il vous faudra simplement fournir votre numéro d'étudiant ou d'identification."
+            answer: "Oui, vous pouvez faire une demande même si vous n'êtes plus étudiant. Il vous faudra simplement fournir votre numéro matricule."
         },
         {
             question: "Quels modes de paiement acceptez-vous ?",

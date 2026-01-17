@@ -29,7 +29,7 @@ export const api = {
       return response.data
     } catch (error) {
       console.error('Erreur lors de la vérification:', error)
-      return { success: false, message: 'Aucune correspondance pour les informations saisies.' }
+      return { success: false, message: 'Aucune correspondance trouvée pour les informations saisies.' }
     }
   },
 
@@ -39,7 +39,7 @@ export const api = {
       return response.data
     } catch (error) {
       console.error('Erreur lors de l\'envoi du récapitulatif:', error)
-      return { success: false, message: 'Erreur lors de l\'envoi du récapitulatif par email.' }
+      return { success: false, message: 'Erreur lors de l\'envoi du récapitulatif par mail.' }
     }
   },
 

@@ -21,8 +21,8 @@ export default function ProcessusSection() {
         },
         {
           step: 3,
-          title: "Réception des documents",
-          description: "Recevez vos documents par email",
+          title: "Réception de notification",
+          description: "Recevez une notification par email dès que votre document est prêt",
           icon: <Mail className="text-white" size={20} />
         }
       ];
