@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import {GraduationCap, SealCheck,
+import {
+  GraduationCap,
+  SealCheck,
   FileText,
   ChevronRight,
   ArrowRight,
@@ -23,6 +25,7 @@ import {GraduationCap, SealCheck,
   BookOpen,
   Award,
   FileSignature,
+  ArrowLeft,
 } from "lucide-react";
 import { api } from "@/services/api";
 import { generatePaymentReference } from "@/lib/utils";
@@ -39,7 +42,7 @@ declare global {
 // Fonction pour obtenir le prix du document sélectionné
 const getDocumentPrice = (acteType: string, actesTypes: any[]) => {
   const selectedActe = actesTypes.find(
-    (acte: { id: any }) => acte.id === acteType
+    (acte: { id: any }) => acte.id === acteType,
   );
   return selectedActe
     ? parseInt(selectedActe.price.replace(" FCFA", ""), 10)
@@ -87,7 +90,7 @@ export default function DemandeSection() {
   >(null);
   const tresorPayWidgetRef = useRef<any>(null);
   const tresorPayEmbedRef = useRef<HTMLDivElement>(null);
-  const TRESORPAY_PUBLIC_KEY = "pk_live_AwUzBkdq8qaZ2E4RDtFOZvQy";
+  const TRESORPAY_PUBLIC_KEY = "pk_live_aApRGlocX20m0pLxQ9GriSO1";
 
   const etablissements = [
     // "Faculté des Sciences",
@@ -97,7 +100,7 @@ export default function DemandeSection() {
     "Faculté de Droit et de Sciences Politiques (FDSP)",
     "Faculté de Sciences Economiques et de Gestion (FASEG)",
     // "Faculté de Lettres, Arts et Sciences Humaines (FLASH)",
-    // "Institut de Formation et Soins Infirmiers et Obstétricaux (IFSIO)",
+    "Institut de Formation et Soins Infirmiers et Obstétricaux (IFSIO)",
     // "Ecole Nationale de Statistique, de Planification et de Démographie (ENSPD)",
     // "Ecole Nationale des Techniciens en Santé publique et Surveillance Épidémiologique (ENATSE)",
     // "Ecole Doctorale des Sciences Agronomiques et de l'Eau (EDSAE)",
@@ -232,6 +235,20 @@ export default function DemandeSection() {
       "MP-NIPC-1",
       "MP-NIPC-2",
     ],
+    "Institut de Formation en Soins Infirmiers et Obstétricaux (IFSIO)": [
+      "LP-INFI-1",
+      "LP-INFI-2",
+      "LP-INFI-3",
+      "LP-SaFe-1",
+      "LP-SaFe-2",
+      "LP-SaFe-3",
+      "MP-SaFe_SSR-1",
+      "MP-SaFe_SSR-2",
+      "MP-INFI_IAC-1",
+      "MP-INFI_IAC-2",
+      "MP-MU-1",
+      "MP-MU-2",
+    ],
   };
 
   const anneesAcademiques = [
@@ -354,7 +371,7 @@ export default function DemandeSection() {
     setPaymentReference(
       paymentResponse.transaction_id ||
         paymentResponse.id ||
-        generatePaymentReference()
+        generatePaymentReference(),
     );
 
     setIsSubmitting(true);
@@ -373,7 +390,7 @@ export default function DemandeSection() {
         "paymentReference",
         paymentResponse.transaction_id ||
           paymentResponse.id ||
-          generatePaymentReference()
+          generatePaymentReference(),
       );
 
       if (formData.acteNaissance)
@@ -383,7 +400,7 @@ export default function DemandeSection() {
       if (formData.fichePreinscription)
         formDataToSend.append(
           "fichePreinscription",
-          formData.fichePreinscription
+          formData.fichePreinscription,
         );
       if (formData.diplomeBac)
         formDataToSend.append("diplomeBac", formData.diplomeBac);
@@ -401,7 +418,7 @@ export default function DemandeSection() {
       console.error("❌ Erreur lors de la soumission après paiement:", error);
       alert(
         error.message ||
-          "Une erreur est survenue lors de la soumission après le paiement. Veuillez contacter le support."
+          "Une erreur est survenue lors de la soumission après le paiement. Veuillez contacter le support.",
       );
     } finally {
       setIsSubmitting(false);
@@ -422,9 +439,7 @@ export default function DemandeSection() {
     };
 
     // Vérifier immédiatement
-    
-    
-    ();
+    checkTresorPay();
 
     // Vérifier périodiquement si le script se charge après
     const interval = setInterval(() => {
@@ -458,7 +473,9 @@ export default function DemandeSection() {
         }
       } catch (error) {
         console.error("Erreur lors de la vérification:", error);
-        setErrorMessage("Aucune correspondance trouvée pour les informations saisies.");
+        setErrorMessage(
+          "Aucune correspondance trouvée pour les informations saisies.",
+        );
       } finally {
         setIsSubmitting(false);
       }
@@ -508,7 +525,7 @@ export default function DemandeSection() {
     if (!tresorPayLoaded || !window.TresorPay) {
       console.error("❌ TresorPay n'est pas encore chargé");
       alert(
-        "Le système de paiement est en cours de chargement. Veuillez réessayer dans quelques instants."
+        "Le système de paiement est en cours de chargement. Veuillez réessayer dans quelques instants.",
       );
       return;
     }
@@ -535,6 +552,13 @@ export default function DemandeSection() {
         transaction: {
           amount: testAmount,
           description: `Paiement pour ${documentTitle} - ${formData.matricule}`,
+          custom_metadata: {
+            equittance: {
+              receipe_nature: "national",
+              receipe_class: 1106,
+              ts_account_number: "BJ6600100100000010156674",
+            },
+          },
         },
         customer: {
           email: formData.email,
@@ -554,18 +578,18 @@ export default function DemandeSection() {
         try {
           // Initialiser sans sélecteur - retourne un widget avec méthode open()
           tresorPayWidgetRef.current = (window.TresorPay.init as any)(
-            tresorPayOptions
+            tresorPayOptions,
           );
 
           console.log(
             "🔍 TresorPay Widget initialisé:",
-            tresorPayWidgetRef.current
+            tresorPayWidgetRef.current,
           );
           console.log("📋 Type:", typeof tresorPayWidgetRef.current);
           if (tresorPayWidgetRef.current) {
             console.log(
               "📋 Méthodes disponibles:",
-              Object.keys(tresorPayWidgetRef.current)
+              Object.keys(tresorPayWidgetRef.current),
             );
           }
 
@@ -587,13 +611,13 @@ export default function DemandeSection() {
             console.error("❌ La méthode open() n'est pas disponible");
             console.log(
               "📋 Structure complète:",
-              JSON.stringify(tresorPayWidgetRef.current, null, 2)
+              JSON.stringify(tresorPayWidgetRef.current, null, 2),
             );
           }
         } catch (initError) {
           console.error(
             "❌ Erreur lors de l'initialisation TresorPay:",
-            initError
+            initError,
           );
           handlePaymentFailure(initError);
         }
@@ -659,7 +683,7 @@ export default function DemandeSection() {
       } catch (error) {
         console.error(
           "❌ Erreur lors de l'initialisation de TresorPay Embedded:",
-          error
+          error,
         );
         handlePaymentFailure(error);
       }
@@ -776,23 +800,23 @@ export default function DemandeSection() {
                 </p>
                 <ul className="text-gray-900 list-disc list-inside">
                   {filePreviews.acteNaissance && (
-                    <li>Acte de naissance: {filePreviews.acteNaissance}</li>
+                    <li>Acte de naissance : {filePreviews.acteNaissance}</li>
                   )}
                   {filePreviews.carteEtudiant && (
-                    <li>Carte d'étudiant: {filePreviews.carteEtudiant}</li>
+                    <li>Carte d'étudiant : {filePreviews.carteEtudiant}</li>
                   )}
                   {filePreviews.fichePreinscription && (
                     <li>
-                      Fiche de préinscription:{" "}
+                      Fiche de préinscription :{" "}
                       {filePreviews.fichePreinscription}
                     </li>
                   )}
                   {filePreviews.diplomeBac && (
-                    <li>Diplôme du BAC: {filePreviews.diplomeBac}</li>
+                    <li>Diplôme du BAC : {filePreviews.diplomeBac}</li>
                   )}
                   {filePreviews.demandeManuscrite && (
                     <li>
-                      Demande manuscrite: {filePreviews.demandeManuscrite}
+                      Demande manuscrite : {filePreviews.demandeManuscrite}
                     </li>
                   )}
                   {!Object.values(filePreviews).some((preview) => preview) && (
@@ -860,7 +884,7 @@ export default function DemandeSection() {
             )}
 
             <p className="text-xs text-gray-500 mt-4 text-center">
-              Montant de test: 1 FCFA | Paiement sécurisé par TresorPay
+              {/* Montant de test: 1 FCFA | */} Paiement sécurisé par TresorPay
             </p>
           </div>
         </div>
@@ -916,7 +940,7 @@ export default function DemandeSection() {
           Demande confirmée!
         </h4>
         <p className="text-gray-600 mb-6">
-          Votre demande a été enregistrée sous le numéro:{" "}
+          Votre demande a été enregistrée sous le numéro :{" "}
           <strong>{trackingId}</strong>
         </p>
         <button
@@ -942,7 +966,7 @@ export default function DemandeSection() {
             Faire une demande
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Processus simple et sécurisé en 4 étapes
+            Processus simple et sécurisé en 4 étapes.
           </p>
         </motion.div>
 
@@ -1101,11 +1125,11 @@ export default function DemandeSection() {
             >
               <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
                 <Mail className="mr-2 text-green-500" size={20} />
-                Coordonnées et type d'acte
+                Coordonnées et type d'acte sollicité
               </h3>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Type d'acte
+                  Type d'acte sollicité
                 </label>
                 <select
                   name="acteType"
@@ -1183,31 +1207,31 @@ export default function DemandeSection() {
               </h3>
               <div className="space-y-6">
                 <FileUploadField
-                  label="Acte de naissance (PDF ou image)"
+                  label="Acte de naissance (PDF ou image bien lisible)"
                   name="acteNaissance"
                   accept=".pdf,.jpg,.jpeg,.png"
                   preview={filePreviews.acteNaissance}
                 />
                 <FileUploadField
-                  label="Carte d'étudiant (PDF ou image)"
+                  label="Carte d'étudiant (PDF ou image bien lisible)"
                   name="carteEtudiant"
                   accept=".pdf,.jpg,.jpeg,.png"
                   preview={filePreviews.carteEtudiant}
                 />
                 <FileUploadField
-                  label="Fiche de préinscription valide (PDF)"
+                  label="Fiche de préinscription valide (PDF bien lisible)"
                   name="fichePreinscription"
                   accept=".pdf"
                   preview={filePreviews.fichePreinscription}
                 />
                 <FileUploadField
-                  label="Diplôme du BAC légalisé (PDF ou image)"
+                  label="Diplôme du BAC légalisé (PDF ou image bien lisible)"
                   name="diplomeBac"
                   accept=".pdf,.jpg,.jpeg,.png"
                   preview={filePreviews.diplomeBac}
                 />
                 <FileUploadField
-                  label="Demande manuscrite (PDF ou image)"
+                  label="Demande manuscrite (PDF ou image bien lisible)"
                   name="demandeManuscrite"
                   accept=".pdf,.jpg,.jpeg,.png"
                   preview={filePreviews.demandeManuscrite}
@@ -1218,6 +1242,7 @@ export default function DemandeSection() {
                   onClick={prevStep}
                   className="px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
                 >
+                  <ArrowLeft className="ml-2" size={18} />
                   Retour
                 </button>
                 <button
@@ -1232,6 +1257,7 @@ export default function DemandeSection() {
               </div>
             </motion.div>
           )}
+          {/* {currentStep === 4 && renderConfirmationStep()} */}
           {currentStep === 4 && renderPaymentStep()}
           {currentStep === 5 && renderConfirmationStep()}
         </div>
