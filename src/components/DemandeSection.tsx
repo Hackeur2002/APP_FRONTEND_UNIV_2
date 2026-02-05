@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   GraduationCap,
-  SealCheck,
   FileText,
   ChevronRight,
   ArrowRight,
@@ -369,9 +368,8 @@ export default function DemandeSection() {
     console.log("✅ Paiement réussi:", paymentResponse);
     setPaymentStatus("success");
     setPaymentReference(
-      paymentResponse.transaction_id ||
-        paymentResponse.id ||
-        generatePaymentReference(),
+      paymentResponse.reference ||
+        paymentResponse.id
     );
 
     setIsSubmitting(true);
@@ -388,9 +386,8 @@ export default function DemandeSection() {
       formDataToSend.append("documentPrice", "1"); // 1 FCFA pour les tests
       formDataToSend.append(
         "paymentReference",
-        paymentResponse.transaction_id ||
-          paymentResponse.id ||
-          generatePaymentReference(),
+        paymentResponse.reference ||
+          paymentResponse.id
       );
 
       if (formData.acteNaissance)
@@ -669,9 +666,13 @@ export default function DemandeSection() {
             iso: "XOF",
           },
           container: "#tresorpay-embed",
-          onSuccess: (response: any) => {
+          // onSuccess: (response: any) => {
+          //   console.log("✅ TresorPay Embedded Success Callback:", response);
+          //   handlePaymentSuccess(response);
+          // },
+          onComplete: (response: any) => {
             console.log("✅ TresorPay Embedded Success Callback:", response);
-            handlePaymentSuccess(response);
+            handlePaymentSuccess(response.transaction);
           },
           onError: (error: any) => {
             console.log("❌ TresorPay Embedded Error Callback:", error);
@@ -834,7 +835,7 @@ export default function DemandeSection() {
 
             {/* Options de paiement */}
             <div className="space-y-4 mb-6">
-              <button
+              {/* <button
                 id="tresorpay-button-pay"
                 onClick={(e) => {
                   e.preventDefault();
@@ -847,7 +848,7 @@ export default function DemandeSection() {
                 {isSubmitting
                   ? "Traitement..."
                   : "Payer avec Bouton de paiement"}
-              </button>
+              </button> */}
 
               <button
                 onClick={() => setPaymentOption("embedded")}
